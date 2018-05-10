@@ -1,26 +1,63 @@
+"""
+Sudoku solver - Reinforcement Learning
+"""
 import numpy as np
-import gym
+import pandas as pd
+import time
 
-from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
-from keras.optimizers import Adam
+from Sudoku import Maze
+from Rl_brain import QLearningTable
+import checker
 
-from rl.agents.dqn import DQNAgent
-from rl.policy import EpsGreedyQPolicy
-from rl.memory import SequentialMemory
+np.random.seed(2)  # reproducible
 
-ENV_NAME = 'CartPole-v0'
 
-# Get the environment and extract the number of actions available in the Cartpole problem
-env = gym.make(ENV_NAME)
-np.random.seed(123)
-env.seed(123)
-nb_actions = env.action_space.n
+def update():
+    for episode in range(360):
+        # initial observation
+        observation = env.reset()
+        # print(observation)
 
-model = Sequential()
-model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(16))
-model.add(Activation('relu'))
-model.add(Dense(nb_actions))
-model.add(Activation('linear'))
-print(model.summary())
+        while True:
+            # fresh env
+            env.render()
+
+            # RL choose action based on observation
+            action = RL.choose_action(str(observation))
+            # print(action)
+
+            # RL take action and get next observation and reward
+            observation_, reward, done = env.step(action)
+
+            # RL learn from this transition
+            RL.learn(str(observation), action, reward, str(observation_))
+
+            # swap observation
+            observation = observation_
+
+            # break while loop when end of this episode
+            if done:
+                print("break")
+                break
+
+    # end of game
+    print('game over')
+    env.destroy()
+
+
+if __name__ == "__main__":
+    start = np.array([[2, 9, 0, 0, 0, 0, 0, 7, 0],
+                      [3, 0, 6, 0, 0, 8, 4, 0, 0],
+                      [8, 0, 0, 0, 4, 0, 0, 0, 2],
+                      [0, 2, 0, 0, 3, 1, 0, 0, 7],
+                      [0, 0, 0, 0, 8, 0, 0, 0, 0],
+                      [1, 0, 0, 9, 5, 0, 0, 6, 0],
+                      [7, 0, 0, 0, 9, 0, 0, 0, 1],
+                      [0, 0, 1, 2, 0, 0, 3, 0, 6],
+                      [0, 3, 0, 0, 0, 0, 0, 5, 9]])
+    # print(checker.check_sudoku(start))
+    env = Maze(start)
+    RL = QLearningTable(actions=list(range(env.n_actions)))
+
+    env.after(100, update)
+    env.mainloop()
